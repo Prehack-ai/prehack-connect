@@ -125,7 +125,7 @@ scans of your running app.
 | Proof of exploit | No | Every finding |
 | Fixes as pull requests | No | Yes |
 | Dynamic scan of the running app | No | Yes |
-| Writes to your GitHub | Never | Only the fix PRs |
+| Writes to your GitHub | Never | Only pull requests you enable: the report, or the fix (your choice of level) |
 | Limit | Unlimited | See [prehack.ai](https://prehack.ai) |
 
 The server tells your editor which mode you are in: tool results carry `modo: "free"` and a
