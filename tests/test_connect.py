@@ -1,13 +1,16 @@
 """Tests against a local FAKE server (stdlib). Run: python -m unittest -v"""
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import threading
 import unittest
+from contextlib import redirect_stderr
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import prehack_connect as pc  # noqa: E402
@@ -59,6 +62,7 @@ class ConnectTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.server.shutdown()
+        self.server.server_close()
         self.tmp.cleanup()
 
     def args(self, *extra: str):
@@ -103,6 +107,30 @@ class ConnectTests(unittest.TestCase):
         code = pc.run(self.args(), cwd=self.home, home=self.home, sleep=lambda s: None)
         self.assertEqual(code, 1)
         self.assertEqual(target.read_text(), "{quebrado")
+
+
+class PythonVersionTests(unittest.TestCase):
+    """The runtime check is a pure function; no interpreter swapping needed."""
+
+    def test_old_python_gets_a_message(self) -> None:
+        message = pc.check_python_version((3, 8, 10, "final", 0))
+        self.assertEqual(
+            message,
+            "PreHack Connect needs Python 3.9 or newer; you have 3.8. "
+            "Install a newer Python or run with python3.9+.",
+        )
+
+    def test_supported_python_passes(self) -> None:
+        self.assertIsNone(pc.check_python_version((3, 9, 0)))
+        self.assertIsNone(pc.check_python_version((3, 12, 1)))
+        self.assertIsNone(pc.check_python_version(sys.version_info))
+
+    def test_main_exits_2_before_argparse_on_old_python(self) -> None:
+        stderr = io.StringIO()
+        with mock.patch.object(pc.sys, "version_info", (3, 7, 0)), redirect_stderr(stderr):
+            code = pc.main(["--this-flag-does-not-exist"])  # argparse never runs
+        self.assertEqual(code, 2)
+        self.assertIn("needs Python 3.9 or newer; you have 3.7", stderr.getvalue())
 
 
 if __name__ == "__main__":

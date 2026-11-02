@@ -2,10 +2,10 @@
 """PreHack public connector: authenticates the customer and points their
 editor at the PreHack MCP server.
 
-Stdlib only. It contains no engine, prompts, attack skills or secrets:
-everything sensitive lives on the server. This file only runs the
-device-code flow (RFC 8628) and writes the ``mcpServers`` block into the
-editor config.
+Stdlib only, Python 3.9 or newer. It contains no engine, prompts, attack
+skills or secrets: everything sensitive lives on the server. This file only
+runs the device-code flow (RFC 8628) and writes the ``mcpServers`` block
+into the editor config.
 """
 from __future__ import annotations
 
@@ -30,10 +30,23 @@ HTTP_TIMEOUT = 15  # seconds per request
 DEFAULT_TTL = 600  # seconds; used if the server does not report an expiry
 SLOW_DOWN_STEP = 5  # RFC 8628: add 5s to the interval on "slow_down"
 DEFAULT_INTERVAL = 5
+MIN_PYTHON = (3, 9)
 
 
 class ConnectError(Exception):
     """Expected flow error, with a human-friendly message."""
+
+
+def check_python_version(version_info: tuple[int, ...]) -> str | None:
+    """Return a one-line message if ``version_info`` is older than
+    ``MIN_PYTHON``, otherwise ``None``. Pure function so it can be tested
+    without swapping the interpreter."""
+    if tuple(version_info[:2]) >= MIN_PYTHON:
+        return None
+    have = ".".join(str(part) for part in version_info[:2])
+    need = ".".join(str(part) for part in MIN_PYTHON)
+    return (f"PreHack Connect needs Python {need} or newer; you have {have}. "
+            f"Install a newer Python or run with python{need}+.")
 
 
 # --------------------------------------------------------------------------
@@ -234,6 +247,12 @@ def run(args: argparse.Namespace, cwd: Path | None = None, home: Path | None = N
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Friendly check before argparse: an older interpreter would otherwise
+    # fail with a confusing SyntaxError or TypeError somewhere below.
+    problem = check_python_version(sys.version_info)
+    if problem:
+        print(problem, file=sys.stderr)
+        return 2
     return run(parse_args(argv))
 
 
