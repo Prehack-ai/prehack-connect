@@ -215,7 +215,7 @@ def run(args: argparse.Namespace, cwd: Path | None = None, home: Path | None = N
         print("To connect PreHack:")
         print(f"  1. Open  {started['verification_url']}")
         print(f"  2. Paste the code:  {started['user_code']}")
-        print("  3. Create your account / subscribe if you have not yet, then approve.")
+        print("  3. Create your account, then Authorize (free) or Subscribe, and approve.")
         print("Waiting for approval...", flush=True)
         token_info = poll_for_token(
             base, started["device_code"], int(started.get("interval", DEFAULT_INTERVAL)),
