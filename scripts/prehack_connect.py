@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Conector público da PreHack: autentica o cliente e aponta o editor dele
-para o servidor MCP da PreHack.
+"""PreHack public connector: authenticates the customer and points their
+editor at the PreHack MCP server.
 
-Só stdlib. Não contém motor, prompt, skill de ataque nem segredo: tudo que é
-sensível mora no servidor. Este arquivo apenas faz o device-code flow
-(RFC 8628) e grava o bloco ``mcpServers`` na config do editor.
+Stdlib only. It contains no engine, prompts, attack skills or secrets:
+everything sensitive lives on the server. This file only runs the
+device-code flow (RFC 8628) and writes the ``mcpServers`` block into the
+editor config.
 """
 from __future__ import annotations
 
@@ -25,14 +26,14 @@ SERVER_NAME = "prehack"
 START_PATH = "/mcp/device/start"
 POLL_PATH = "/mcp/device/poll"
 RPC_PATH = "/mcp/rpc"
-HTTP_TIMEOUT = 15  # segundos por requisição
-DEFAULT_TTL = 600  # segundos; usado se o servidor não informar expiração
-SLOW_DOWN_STEP = 5  # RFC 8628: soma 5s ao intervalo em "slow_down"
+HTTP_TIMEOUT = 15  # seconds per request
+DEFAULT_TTL = 600  # seconds; used if the server does not report an expiry
+SLOW_DOWN_STEP = 5  # RFC 8628: add 5s to the interval on "slow_down"
 DEFAULT_INTERVAL = 5
 
 
 class ConnectError(Exception):
-    """Erro esperado do fluxo, com mensagem amigável para o humano."""
+    """Expected flow error, with a human-friendly message."""
 
 
 # --------------------------------------------------------------------------
@@ -40,8 +41,8 @@ class ConnectError(Exception):
 # --------------------------------------------------------------------------
 
 def post_json(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
-    """POST JSON e devolve (status, corpo). Erros HTTP não levantam exceção:
-    o corpo de 4xx pode trazer o motivo (ex.: expirado, negado)."""
+    """POST JSON and return (status, body). HTTP errors do not raise:
+    a 4xx body may carry the reason (e.g. expired, denied)."""
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
@@ -54,7 +55,7 @@ def post_json(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     except urllib.error.HTTPError as exc:
         status, raw = exc.code, exc.read()
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        raise ConnectError(f"não consegui falar com {url}: {exc}") from exc
+        raise ConnectError(f"could not reach {url}: {exc}") from exc
     try:
         body = json.loads(raw.decode("utf-8") or "{}")
     except (UnicodeDecodeError, json.JSONDecodeError):
@@ -67,11 +68,11 @@ def post_json(url: str, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
 # --------------------------------------------------------------------------
 
 def start_device_flow(base: str) -> dict[str, Any]:
-    """Pede um par device_code/user_code ao servidor."""
+    """Ask the server for a device_code/user_code pair."""
     status, body = post_json(f"{base}{START_PATH}", {})
     needed = ("user_code", "verification_url", "device_code")
     if status != 200 or any(key not in body for key in needed):
-        raise ConnectError(f"o servidor recusou iniciar a conexão (HTTP {status}).")
+        raise ConnectError(f"the server refused to start the connection (HTTP {status}).")
     return body
 
 
@@ -83,8 +84,8 @@ def poll_for_token(
     sleep=time.sleep,
     clock=time.monotonic,
 ) -> dict[str, Any]:
-    """Faz poll até receber ``mcp_token``. Respeita ``interval`` e
-    ``slow_down``; desiste ao passar do TTL."""
+    """Poll until ``mcp_token`` is received. Honors ``interval`` and
+    ``slow_down``; gives up once the TTL is exceeded."""
     deadline = clock() + ttl
     wait = max(1, interval)
     while clock() < deadline:
@@ -99,34 +100,34 @@ def poll_for_token(
             wait += SLOW_DOWN_STEP
             continue
         if state == "expired" or status in (400, 404, 410):
-            raise ConnectError("o código expirou. Rode o conector de novo.")
+            raise ConnectError("the code expired. Run the connector again.")
         if state in ("denied", "access_denied") or status == 403:
-            raise ConnectError("a conexão foi negada na página de aprovação.")
-        raise ConnectError(f"resposta inesperada do servidor (HTTP {status}).")
-    raise ConnectError("tempo esgotado esperando a aprovação. Rode de novo quando estiver pronto.")
+            raise ConnectError("the connection was denied on the approval page.")
+        raise ConnectError(f"unexpected server response (HTTP {status}).")
+    raise ConnectError("timed out waiting for approval. Run again when you are ready.")
 
 
 # --------------------------------------------------------------------------
-# Config do editor
+# Editor config
 # --------------------------------------------------------------------------
 
 def config_path(editor: str, scope: str, cwd: Path, home: Path) -> Path:
-    """Caminho do arquivo de config MCP do editor.
+    """Path of the editor's MCP config file.
 
-    - Claude Code, escopo user: ``~/.claude.json`` (fora de qualquer repo).
-    - Claude Code, escopo project: ``<cwd>/.mcp.json`` (costuma ser versionado!).
-    - Cursor, escopo user: ``~/.cursor/mcp.json``; project: ``<cwd>/.cursor/mcp.json``.
+    - Claude Code, user scope: ``~/.claude.json`` (outside any repo).
+    - Claude Code, project scope: ``<cwd>/.mcp.json`` (often committed!).
+    - Cursor, user scope: ``~/.cursor/mcp.json``; project: ``<cwd>/.cursor/mcp.json``.
     """
     if editor == "claude-code":
         return home / ".claude.json" if scope == "user" else cwd / ".mcp.json"
     if editor == "cursor":
         base = home if scope == "user" else cwd
         return base / ".cursor" / "mcp.json"
-    raise ConnectError(f"editor desconhecido: {editor}")
+    raise ConnectError(f"unknown editor: {editor}")
 
 
 def build_server_block(base: str, token: str, transport: str) -> dict[str, Any]:
-    """Bloco do servidor MCP. O token vai como Bearer no header."""
+    """MCP server block. The token goes as a Bearer header."""
     return {
         "type": transport,
         "url": f"{base}{RPC_PATH}",
@@ -135,10 +136,10 @@ def build_server_block(base: str, token: str, transport: str) -> dict[str, Any]:
 
 
 def write_config(path: Path, block: dict[str, Any]) -> str:
-    """Grava ``mcpServers.prehack`` de forma idempotente.
+    """Write ``mcpServers.prehack`` idempotently.
 
-    Preserva todo o resto do arquivo, faz backup antes de alterar e só mexe
-    na chave ``prehack``. Devolve "criado", "atualizado" ou "inalterado".
+    Preserves the rest of the file, backs it up before changing it and only
+    touches the ``prehack`` key. Returns "created", "updated" or "unchanged".
     """
     data: dict[str, Any] = {}
     existed = path.exists()
@@ -146,14 +147,14 @@ def write_config(path: Path, block: dict[str, Any]) -> str:
         try:
             data = json.loads(path.read_text(encoding="utf-8") or "{}")
         except json.JSONDecodeError as exc:
-            raise ConnectError(f"{path} não é um JSON válido; não mexi nele ({exc}).") from exc
+            raise ConnectError(f"{path} is not valid JSON; left it untouched ({exc}).") from exc
         if not isinstance(data, dict):
-            raise ConnectError(f"{path} tem formato inesperado; não mexi nele.")
+            raise ConnectError(f"{path} has an unexpected format; left it untouched.")
     servers = data.setdefault("mcpServers", {})
     if not isinstance(servers, dict):
-        raise ConnectError(f"'mcpServers' em {path} não é um objeto; não mexi nele.")
+        raise ConnectError(f"'mcpServers' in {path} is not an object; left it untouched.")
     if servers.get(SERVER_NAME) == block:
-        return "inalterado"
+        return "unchanged"
     if existed:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         shutil.copy2(path, path.with_name(f"{path.name}.bak-{stamp}"))
@@ -161,9 +162,9 @@ def write_config(path: Path, block: dict[str, Any]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.tmp")
     tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.chmod(tmp, 0o600)  # contém token
-    tmp.replace(path)  # troca atômica
-    return "atualizado" if existed else "criado"
+    os.chmod(tmp, 0o600)  # contains a token
+    tmp.replace(path)  # atomic swap
+    return "updated" if existed else "created"
 
 
 # --------------------------------------------------------------------------
@@ -173,18 +174,18 @@ def write_config(path: Path, block: dict[str, Any]) -> str:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="prehack_connect",
-        description="Conecta o seu editor (Claude Code/Cursor) à PreHack via device-code.",
+        description="Connect your editor (Claude Code/Cursor) to PreHack via device-code.",
     )
     parser.add_argument("--server-url", default=os.environ.get("PREHACK_SERVER_URL", DEFAULT_SERVER_URL),
-                        help=f"URL base do servidor (env PREHACK_SERVER_URL; padrão {DEFAULT_SERVER_URL}).")
+                        help=f"server base URL (env PREHACK_SERVER_URL; default {DEFAULT_SERVER_URL}).")
     parser.add_argument("--editor", choices=["claude-code", "cursor", "both"], default="claude-code")
     parser.add_argument("--scope", choices=["user", "project"], default="user",
-                        help="user = config global (padrão, seguro); project = arquivo no repo atual (cuidado: token).")
+                        help="user = global config (default, safe); project = file in the current repo (careful: contains a token).")
     parser.add_argument("--transport", choices=["http", "sse"], default="http",
-                        help="tipo de transporte MCP gravado na config (padrão http = Streamable HTTP com SSE).")
-    parser.add_argument("--ttl", type=int, default=DEFAULT_TTL, help="segundos máximos esperando a aprovação.")
+                        help="MCP transport type written to the config (default http = Streamable HTTP with SSE).")
+    parser.add_argument("--ttl", type=int, default=DEFAULT_TTL, help="maximum seconds to wait for approval.")
     parser.add_argument("--dry-run", action="store_true",
-                        help="faz o fluxo todo mas NÃO grava nada; mostra o que gravaria (token mascarado).")
+                        help="runs the whole flow but writes NOTHING; shows what would be written (token masked).")
     return parser.parse_args(argv)
 
 
@@ -198,11 +199,11 @@ def run(args: argparse.Namespace, cwd: Path | None = None, home: Path | None = N
     cwd, home = cwd or Path.cwd(), home or Path.home()
     try:
         started = start_device_flow(base)
-        print("Para conectar a PreHack:")
-        print(f"  1. Abra  {started['verification_url']}")
-        print(f"  2. Cole o código:  {started['user_code']}")
-        print("  3. Crie a conta / assine, se ainda não fez, e aprove.")
-        print("Aguardando a aprovação...", flush=True)
+        print("To connect PreHack:")
+        print(f"  1. Open  {started['verification_url']}")
+        print(f"  2. Paste the code:  {started['user_code']}")
+        print("  3. Create your account / subscribe if you have not yet, then approve.")
+        print("Waiting for approval...", flush=True)
         token_info = poll_for_token(
             base, started["device_code"], int(started.get("interval", DEFAULT_INTERVAL)),
             args.ttl, sleep=sleep,
@@ -214,21 +215,21 @@ def run(args: argparse.Namespace, cwd: Path | None = None, home: Path | None = N
             path = config_path(editor, args.scope, cwd, home)
             if args.dry_run:
                 shown = {**block, "headers": {"Authorization": f"Bearer {mask(token)}"}}
-                print(f"[dry-run] gravaria em {path}: mcpServers.{SERVER_NAME} = {json.dumps(shown)}")
+                print(f"[dry-run] would write to {path}: mcpServers.{SERVER_NAME} = {json.dumps(shown)}")
                 continue
             result = write_config(path, block)
-            print(f"{editor}: {result} em {path}")
+            print(f"{editor}: {result} at {path}")
             if args.scope == "project":
-                print(f"  ATENÇÃO: {path.name} contém o token. Não versione (.gitignore).")
+                print(f"  WARNING: {path.name} contains the token. Do not commit it (.gitignore).")
     except ConnectError as exc:
-        print(f"Erro: {exc}", file=sys.stderr)
+        print(f"Error: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
-        print("\nCancelado.", file=sys.stderr)
+        print("\nCancelled.", file=sys.stderr)
         return 130
-    print("Pronto. Reinicie o editor e peça: liste as ferramentas (tools/list) e rode postura_de_seguranca.")
+    print("Done. Restart your editor and ask it to list the tools (tools/list) and run postura_de_seguranca.")
     if token_info.get("expires_at"):
-        print(f"O token vale até {token_info['expires_at']}.")
+        print(f"The token is valid until {token_info['expires_at']}.")
     return 0
 
 

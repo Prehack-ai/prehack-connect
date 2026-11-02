@@ -1,4 +1,4 @@
-"""Testes contra um servidor FALSO local (stdlib). Rodar: python -m unittest -v"""
+"""Tests against a local FAKE server (stdlib). Run: python -m unittest -v"""
 from __future__ import annotations
 
 import json
@@ -14,11 +14,11 @@ import prehack_connect as pc  # noqa: E402
 
 
 class FakeHandler(BaseHTTPRequestHandler):
-    """Servidor falso: 1º poll pending, 2º slow_down, 3º aprovado."""
+    """Fake server: 1st poll pending, 2nd slow_down, 3rd approved."""
     polls = 0
     mode = "ok"  # ok | expired
 
-    def log_message(self, *args) -> None:  # silencia o log
+    def log_message(self, *args) -> None:  # silence the log
         pass
 
     def _send(self, status: int, body: dict) -> None:
@@ -69,16 +69,16 @@ class ConnectTests(unittest.TestCase):
         target.write_text(json.dumps({"outra": 1, "mcpServers": {"x": {"url": "u"}}}))
         code = pc.run(self.args(), cwd=self.home, home=self.home, sleep=self.sleeps.append)
         self.assertEqual(code, 0)
-        self.assertEqual(self.sleeps, [1, 1, 6])  # slow_down soma 5s
+        self.assertEqual(self.sleeps, [1, 1, 6])  # slow_down adds 5s
         data = json.loads(target.read_text())
         self.assertEqual(data["outra"], 1)
         self.assertIn("x", data["mcpServers"])
         self.assertEqual(data["mcpServers"]["prehack"]["url"], f"{self.url}/mcp/rpc")
         self.assertEqual(data["mcpServers"]["prehack"]["headers"]["Authorization"], "Bearer tok_secret_123456")
         self.assertEqual(len(list(self.home.glob(".claude.json.bak-*"))), 1)
-        # idempotência: mesmo bloco -> inalterado, sem novo backup
+        # idempotency: same block -> unchanged, no new backup
         block = pc.build_server_block(self.url, "tok_secret_123456", "http")
-        self.assertEqual(pc.write_config(target, block), "inalterado")
+        self.assertEqual(pc.write_config(target, block), "unchanged")
         self.assertEqual(len(list(self.home.glob(".claude.json.bak-*"))), 1)
 
     def test_dry_run_nao_grava(self) -> None:

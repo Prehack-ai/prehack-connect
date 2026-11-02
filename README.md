@@ -1,50 +1,53 @@
 # PreHack Connect
 
-## O que é
+## What it is
 
-Conector **público** da PreHack (pentester de IA autônomo). É uma skill de
-Claude Code/Cursor mais um script que autentica você (device-code, RFC 8628)
-e grava, na config do seu editor, o apontamento para o servidor MCP da PreHack.
+The **public** connector for PreHack (an autonomous AI pentester). It is a
+Claude Code/Cursor skill plus a script that authenticates you (device-code,
+RFC 8628) and writes, into your editor's config, the entry that points to the
+PreHack MCP server.
 
-Este repositório **não contém** motor, prompts de segurança, skills de ataque,
-segredos nem chaves. Tudo isso vive no servidor. Aqui só há o instalador.
+This repository **does not contain** the engine, security prompts, attack
+skills, secrets or keys. All of that lives on the server. Here there is only
+the installer.
 
-## Como rodar
+## How to run
 
-Peça à sua IA: *"instala a PreHack a partir de github.com/Prehack-ai/prehack-connect"*, ou rode você mesmo
-(Python 3.12+, só biblioteca padrão):
+Ask your AI: *"install PreHack from github.com/Prehack-ai/prehack-connect"*, or run it yourself
+(Python 3.12+, standard library only):
 
 ```bash
-python3 scripts/prehack_connect.py                 # Claude Code, escopo user
+python3 scripts/prehack_connect.py                 # Claude Code, user scope
 python3 scripts/prehack_connect.py --editor cursor
-python3 scripts/prehack_connect.py --editor both --dry-run   # só mostra, não grava
+python3 scripts/prehack_connect.py --editor both --dry-run   # only shows, writes nothing
 ```
 
-O script mostra um link e um código. Abra o link no navegador, crie a conta/assine
-(se ainda não fez) e aprove. Ele então grava o bloco `mcpServers.prehack`.
+The script prints a link and a code. Open the link in your browser, create an
+account/subscribe (if you have not yet) and approve. It then writes the
+`mcpServers.prehack` block.
 
-Onde grava:
+Where it writes:
 
-| Editor | `--scope user` (padrão) | `--scope project` |
+| Editor | `--scope user` (default) | `--scope project` |
 |---|---|---|
 | Claude Code | `~/.claude.json` | `./.mcp.json` |
 | Cursor | `~/.cursor/mcp.json` | `./.cursor/mcp.json` |
 
-- **Idempotente:** só mexe na chave `prehack`; se já está igual, não altera nada.
-- **Backup:** antes de alterar um arquivo existente, copia para `<arquivo>.bak-AAAAMMDD-HHMMSS`.
-- Arquivo com JSON inválido não é tocado. O arquivo é gravado com permissão `0600` (tem token).
-- `--scope project` coloca o token no repo: não versione.
-- Servidor: `--server-url` ou env `PREHACK_SERVER_URL` (padrão `https://prehack-server.fly.dev`).
-- Transporte: `--transport http` (padrão, Streamable HTTP/SSE) ou `sse`.
+- **Idempotent:** only touches the `prehack` key; if it is already identical, nothing changes.
+- **Backup:** before changing an existing file, it copies it to `<file>.bak-YYYYMMDD-HHMMSS`.
+- A file with invalid JSON is left untouched. The file is written with `0600` permissions (it holds a token).
+- `--scope project` puts the token inside the repo: do not commit it.
+- Server: `--server-url` or env `PREHACK_SERVER_URL` (default `https://prehack-server.fly.dev`).
+- Transport: `--transport http` (default, Streamable HTTP/SSE) or `sse`.
 
-Depois reinicie o editor, liste as ferramentas (`tools/list`) e rode `postura_de_seguranca`.
+Afterwards, restart your editor, list the tools (`tools/list`) and run `postura_de_seguranca`.
 
-## Como testar
+## How to test
 
 ```bash
 python3 -m py_compile scripts/prehack_connect.py
 python3 scripts/prehack_connect.py --help
-python3 -m unittest discover -s tests -v   # usa um servidor falso local, sem rede
+python3 -m unittest discover -s tests -v   # uses a local fake server, no network
 ```
 
-Uso autorizado apenas: teste somente alvos seus ou com permissão escrita.
+Authorized use only: test only targets you own or have written permission to test.

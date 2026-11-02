@@ -1,35 +1,36 @@
 ---
 name: prehack-connect
-description: Use quando o usuário pedir para instalar, conectar ou configurar a PreHack, ligar o pentest de IA ao meu repo, testar a segurança do meu código com IA, achar vulnerabilidades no meu projeto, ou mandar a URL github.com/Prehack-ai/prehack-connect. Também quando disser "conecta a PreHack no meu Claude Code/Cursor", "quero o pentester de IA", "instala o MCP da PreHack" ou "cadê minha credencial da PreHack".
+description: Use when the user asks to install, connect or set up PreHack, hook the AI pentester up to my repo, run an AI pentest on my code, scan my code for vulnerabilities with AI, find security holes in my project, or sends the URL github.com/Prehack-ai/prehack-connect. Also when they say "connect PreHack to my Claude Code/Cursor", "install PreHack", "I want the AI pentester", "set up the PreHack MCP" or "where's my PreHack credential".
 ---
 
-# Conectar a PreHack ao editor
+# Connect PreHack to your editor
 
-Esta skill só **autentica** e **aponta o editor** para o servidor da PreHack.
-Todo o trabalho de segurança roda no servidor. Uso autorizado apenas: só
-teste código e alvos que são do usuário ou que ele tem permissão escrita para testar.
+This skill only **authenticates** and **points the editor** at the PreHack
+server. All the security work runs on the server. Authorized use only: only
+test code and targets that belong to the user or that they have written
+permission to test.
 
-## Passo a passo
+## Steps
 
-1. **Rode o conector** (Python 3.12+, sem instalar nada):
+1. **Run the connector** (Python 3.12+, nothing to install):
    ```bash
    python3 scripts/prehack_connect.py
    ```
-   Opções úteis: `--editor claude-code|cursor|both`, `--scope user|project`,
-   `--server-url <url>` (ou env `PREHACK_SERVER_URL`), `--dry-run` (não grava nada).
-   Prefira o escopo `user` (padrão): o escopo `project` grava o token dentro do repo.
-2. **Mostre ao humano, em destaque**, o link e o código que o script imprimir
-   ("Abra ... e cole o código ..."). É o humano quem abre o link no navegador dele,
-   cria a conta, assina e aprova. Você não cria conta, não paga e não
-   preenche nada por ele.
-3. **Aguarde.** O script faz o poll sozinho e termina quando o humano aprovar
-   (ou avisa se o código expirar; nesse caso rode de novo).
-4. **Peça para reiniciar o editor** (ou recarregar os servidores MCP) para ele ler a config nova.
-5. **Confirme:** chame `tools/list` no servidor `prehack` (deve listar as ferramentas)
-   e rode `postura_de_seguranca`. Se responder, diga ao usuário: "conectado ✅".
+   Useful options: `--editor claude-code|cursor|both`, `--scope user|project`,
+   `--server-url <url>` (or env `PREHACK_SERVER_URL`), `--dry-run` (writes nothing).
+   Prefer the `user` scope (default): the `project` scope writes the token inside the repo.
+2. **Show the human, prominently,** the link and code the script prints
+   ("Open ... Paste the code ..."). The human opens the link in their own browser,
+   creates the account, subscribes and approves. You do not create accounts,
+   pay or fill in anything on their behalf.
+3. **Wait.** The script polls on its own and finishes once the human approves
+   (or reports that the code expired; in that case run it again).
+4. **Ask them to restart the editor** (or reload the MCP servers) so it reads the new config.
+5. **Confirm:** call `tools/list` on the `prehack` server (it should list the tools)
+   and run `postura_de_seguranca`. If it responds, tell the user: "connected ✅".
 
-## Regras
+## Rules
 
-- Nunca peça nem mostre o token ao usuário, não o cole no chat, não o versione.
-- Se `tools/list` retornar 401, o token expirou: rode o conector de novo.
-- Não tente contornar a aprovação no navegador nem o pagamento.
+- Never ask the user for the token or show it to them, never paste it in the chat, never commit it.
+- If `tools/list` returns 401, the token has expired: run the connector again.
+- Do not try to bypass the browser approval or the payment.
