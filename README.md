@@ -1,6 +1,6 @@
 # PreHack Connect
 
-**Connect your AI editor to PreHack, an autonomous AI pentester for your app. One command, no API key.**
+**Connect your AI editor to PreHack, an autonomous AI pentester for your app. One short script, no API key.**
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none%20(stdlib)-brightgreen)
@@ -36,8 +36,8 @@ the same kind of flow used by TVs and CLIs such as the GitHub CLI.
  ------------                      --------------                 -----------------
  1. connector asks to start  --->  returns a short code + link
  2. prints the link and code  ------------------------------->   3. opens the link,
-                                                                     signs in / subscribes,
-                                                                     approves the code
+                                                                     signs in, picks free
+                                                                     or subscribes, approves
  4. connector polls...        --->  "approved" + token   <-----
  5. writes the "prehack" entry into your editor's MCP config (file mode 0600)
  6. you restart the editor; PreHack's tools appear
@@ -45,7 +45,7 @@ the same kind of flow used by TVs and CLIs such as the GitHub CLI.
 
 1. The script asks the server for a one-time code and a verification link.
 2. It prints them. **You** open the link in your own browser, create an account or sign in,
-   subscribe if you have not yet, and approve.
+   then either **Authorize (free)** or **Subscribe**, and approve.
 3. The script polls until approved (or until the code expires) and receives an MCP token.
 4. It writes a single `mcpServers.prehack` entry into your editor's config.
 
@@ -56,9 +56,13 @@ and never on your behalf.
 
 Requirements: Python 3.9+. Nothing to install.
 
-**Option A, let your AI do it.** In Claude Code or Cursor, say:
+**Option A, ask your AI.** In Claude Code or Cursor, paste:
 
 > install PreHack from github.com/Prehack-ai/prehack-connect
+
+Your AI will fetch this repo, read the connector (one short Python file; that is the
+point) and run it with your OK. It will then show you the link and code to approve in
+your browser.
 
 **Option B, run it yourself:**
 
@@ -101,6 +105,32 @@ Then restart your editor, list the server's tools (`tools/list`) and run
 | `--ttl SECONDS` | Maximum time to wait for approval |
 | `--dry-run` | Show, do not write |
 
+## Free mode vs Plug & Play
+
+After connecting, you can use PreHack without a subscription. Be clear about what you get:
+
+**Free mode** is not the PreHack pentester agent. It runs a set of deterministic platform
+tools (pattern matching and fixed checks): no AI, no proof of exploit, no fixes, no dynamic
+scan of your running app. Coverage and accuracy are lower than the agent and false positives
+are expected. Findings include file and line. Unlimited. In free mode nothing is ever written
+to your GitHub.
+
+**Plug & Play (US$29/mo)** adds AI-powered detection (more vulnerability classes, fewer false
+positives), proof of exploit for every finding, fixes delivered as pull requests, and dynamic
+scans of your running app.
+
+| | Free mode | Plug & Play |
+|---|---|---|
+| Engine | Deterministic checks (no AI) | AI pentester agent |
+| Proof of exploit | No | Every finding |
+| Fixes as pull requests | No | Yes |
+| Dynamic scan of the running app | No | Yes |
+| Writes to your GitHub | Never | Only the fix PRs |
+| Limit | Unlimited | See [prehack.ai](https://prehack.ai) |
+
+The server tells your editor which mode you are in: tool results carry `modo: "free"` and a
+notice block while in free mode.
+
 ## What is PreHack
 
 PreHack is an autonomous, multi-agent AI pentester offered as a service. In short:
@@ -110,9 +140,10 @@ PreHack is an autonomous, multi-agent AI pentester offered as a service. In shor
 3. **It proves every finding** with a real proof-of-concept attack in an isolated sandbox. No proof, no report.
 4. **It sends the fix** as a Pull Request.
 
-Pricing is a single plan, **Plug & Play, US$29/month**, with managed AI credit: PreHack runs
-the AI, **you do not need an API key**. See [prehack.ai](https://prehack.ai) for details, current
-pricing and FAQ.
+Steps 2 to 4 describe the pentester agent, which is the **Plug & Play** plan (**US$29/month**)
+with managed AI credit: PreHack runs the AI, **you do not need an API key**. Without a
+subscription you get [free mode](#free-mode-vs-plug--play), which is deterministic checks only.
+See [prehack.ai](https://prehack.ai) for details, current pricing and FAQ.
 
 ## Security and trust
 
