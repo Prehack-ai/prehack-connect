@@ -6,6 +6,7 @@
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none%20(stdlib)-brightgreen)
 ![Auth: device code RFC 8628](https://img.shields.io/badge/auth-device%20code%20(RFC%208628)-informational)
 ![Use: authorized only](https://img.shields.io/badge/use-authorized%20only-red)
+![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)
 
 [PreHack](https://prehack.ai) connects to your GitHub, finds security flaws in your app,
 **proves each one with a real attack** in an isolated sandbox, and hands you the fix as a
@@ -132,8 +133,9 @@ flow, and edits your editor's MCP config file (with backup). Nothing else.
 to test. PreHack must not be used against third parties' systems. You are responsible for
 having the authorization and complying with applicable law.
 
-**Found a problem in this connector?** Please contact us through [prehack.ai](https://prehack.ai)
-rather than opening a public issue with sensitive details.
+**Found a security problem in this connector?** Email **security@prehack.ai** (see
+[SECURITY.md](SECURITY.md)) rather than opening a public issue with sensitive details.
+For anything else, reach us at **hello@prehack.ai** or via [prehack.ai](https://prehack.ai).
 
 ## Testing
 
@@ -148,3 +150,9 @@ python3 -m unittest discover -s tests -v   # uses a local fake server, no networ
 - Website, pricing and FAQ: [prehack.ai](https://prehack.ai)
 - Sign-in standard: [RFC 8628, OAuth 2.0 Device Authorization Grant](https://datatracker.ietf.org/doc/html/rfc8628)
 - MCP (Model Context Protocol): [modelcontextprotocol.io](https://modelcontextprotocol.io)
+
+## License
+
+[Apache License 2.0](LICENSE). This license covers **only this connector** (the installer in
+this repository), not the PreHack service — the scanning engine and everything that powers it
+are proprietary and run on PreHack's servers.
