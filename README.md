@@ -2,7 +2,7 @@
 
 **Connect your AI editor to PreHack, an autonomous AI pentester for your app. One command, no API key.**
 
-![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
+![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none%20(stdlib)-brightgreen)
 ![Auth: device code RFC 8628](https://img.shields.io/badge/auth-device%20code%20(RFC%208628)-informational)
 ![Use: authorized only](https://img.shields.io/badge/use-authorized%20only-red)
@@ -54,7 +54,7 @@ and never on your behalf.
 
 ## Quickstart
 
-Requirements: Python 3.12+. Nothing to install.
+Requirements: Python 3.9+. Nothing to install.
 
 **Option A, let your AI do it.** In Claude Code or Cursor, say:
 
@@ -144,6 +144,9 @@ python3 -m py_compile scripts/prehack_connect.py
 python3 scripts/prehack_connect.py --help
 python3 -m unittest discover -s tests -v   # uses a local fake server, no network
 ```
+
+The tests pass on Python 3.9 through 3.14. To check the oldest supported version with
+[uv](https://docs.astral.sh/uv/): `uv run --python 3.9 --no-project python -m unittest discover -s tests`.
 
 ## Links
 

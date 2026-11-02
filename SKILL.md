@@ -12,7 +12,7 @@ permission to test.
 
 ## Steps
 
-1. **Run the connector** (Python 3.12+, nothing to install):
+1. **Run the connector** (Python 3.9+, nothing to install):
    ```bash
    python3 scripts/prehack_connect.py
    ```
